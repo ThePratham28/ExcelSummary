@@ -1,8 +1,11 @@
-import { readFile, utils } from "xlsx";
+import xlsx from "xlsx";
 
-export const parseExcelFile = (filePath) => {
-  const workbook = readFile(filePath);
+function parseExcel(buffer) {
+  const workbook = xlsx.read(buffer, { type: "buffer" });
   const sheetName = workbook.SheetNames[0];
-  const sheetData = utils.sheet_to_json(workbook.Sheets[sheetName]);
-  return sheetData;
-};
+  const sheet = workbook.Sheets[sheetName];
+  const json = xlsx.utils.sheet_to_json(sheet, { defval: "" });
+  return json;
+}
+
+export default parseExcel;

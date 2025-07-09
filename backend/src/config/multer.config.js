@@ -1,13 +1,13 @@
 import multer from "multer";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
-import cloudinary from "./cloudinary.config";
+import path from "path";
 
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: "excel_files", // Folder name in Cloudinary
-    resource_type: "raw", // For non-image files like Excel
-  },
-});
+const storage = multer.memoryStorage();
+const fileFilter = (req, file, cb) => {
+  const ext = path.extname(file.originalname);
+  if (ext !== ".xls" && ext !== ".xlsx") {
+    return cb(new Error("Only Excel files are allowed"), false);
+  }
+  cb(null, true);
+};
 
-export const upload = multer({ storage });
+export default multer({ storage, fileFilter });

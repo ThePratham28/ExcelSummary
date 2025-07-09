@@ -2,12 +2,15 @@ import { hash, verify } from "argon2";
 import jwt from "jsonwebtoken";
 import { UserModel } from "../models/user.model.js";
 
+const TOKEN_EXPIRY = "6h";
+const COOKIE_MAX_AGE = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
+
 const setAuthCookie = (res, token) => {
   res.cookie("token", token, {
     httpOnly: true,
     sameSite: "Strict", // Prevent CSRF attacks
     secure: process.env.NODE_ENV === "production", // Use secure cookies in production
-    maxAge: 6 * 60 * 60 * 1000, // 6 hours
+    maxAge: COOKIE_MAX_AGE,
   });
 };
 
@@ -37,7 +40,7 @@ export const registerUser = async (req, res) => {
     await newUser.save();
 
     const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
-      expiresIn: "6h",
+      expiresIn: TOKEN_EXPIRY,
     });
 
     setAuthCookie(res, token); // Set the authentication cookie
@@ -69,7 +72,7 @@ export const loginUser = async (req, res) => {
     }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "2h",
+      expiresIn: TOKEN_EXPIRY,
     });
 
     setAuthCookie(res, token); // Set the authentication cookie
