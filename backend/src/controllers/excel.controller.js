@@ -1,3 +1,6 @@
+import parseExcel from "../utils/excelParser.js";
+import { ExcelData } from "../models/excelData.model.js";
+
 export const uploadFile = async (req, res) => {
   try {
     const jsonData = parseExcel(req.file.buffer);

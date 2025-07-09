@@ -1,6 +1,7 @@
 // Importing required modules and dependencies
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 import cookieParser from "cookie-parser";
 import { connectDB } from "./src/config/db.config.js";
 import authRoutes from "./src/routes/auth.routes.js";
