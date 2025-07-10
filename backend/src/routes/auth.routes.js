@@ -4,6 +4,7 @@ import {
   registerUser,
   userProfile,
 } from "../controllers/auth.controller.js";
+import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
@@ -118,6 +119,6 @@ router.post("/login", loginUser);
  *       500:
  *         description: Server error
  */
-router.get("/profile", userProfile);
+router.get("/profile", authMiddleware(),userProfile);
 
 export default router;
