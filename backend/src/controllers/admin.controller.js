@@ -1,4 +1,4 @@
-import { ExcelData } from "../models/excelData.model";
+import { ExcelData } from "../models/excelData.model.js";
 import { UserModel } from "../models/user.model.js";
 
 export const getAllUsers = async (req, res) => {
@@ -14,10 +14,8 @@ export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Delete user's files and charts
     await ExcelData.deleteMany({ user: id });
 
-    // Delete user
     const user = await UserModel.findByIdAndDelete(id);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -39,7 +37,7 @@ export const getUserStats = async (req, res) => {
     const userStats = await UserModel.aggregate([
       {
         $lookup: {
-          from: "exceldatas",
+          from: ExcelData.collection.name,
           localField: "_id",
           foreignField: "user",
           as: "files",
@@ -60,7 +58,6 @@ export const getUserStats = async (req, res) => {
     res.status(200).json({
       totalUsers,
       totalFiles,
-      totalCharts,
       userStats,
     });
   } catch (err) {

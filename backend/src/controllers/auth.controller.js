@@ -39,9 +39,13 @@ export const registerUser = async (req, res) => {
 
     await newUser.save();
 
-    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
-      expiresIn: TOKEN_EXPIRY,
-    });
+    const token = jwt.sign(
+      { id: newUser._id, role: newUser.role },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: TOKEN_EXPIRY,
+      }
+    );
 
     setAuthCookie(res, token); // Set the authentication cookie
     res.status(201).json({ message: "User registered successfully" });
@@ -71,9 +75,13 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: TOKEN_EXPIRY,
-    });
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: TOKEN_EXPIRY,
+      }
+    );
 
     setAuthCookie(res, token); // Set the authentication cookie
     res.status(200).json({ message: "Login successful" });

@@ -5,8 +5,9 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { connectDB } from "./src/config/db.config.js";
 import authRoutes from "./src/routes/auth.routes.js";
-import excelRoutes from "./src/routes/excel.routes.js"; 
+import excelRoutes from "./src/routes/excel.routes.js";
 import chartRoutes from "./src/routes/chart.routes.js";
+import adminRoutes from "./src/routes/admin.routes.js";
 import { errorHandler } from "./src/middleware/errorHandler.middleware.js";
 
 // Initialize Express application
@@ -19,10 +20,12 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Middleware to handle Cross-Origin Resource Sharing (CORS)
-app.use(cors({
-  origin: "*", // Allow requests from any origin
-  credentials: true, // Allow cookies to be sent with requests
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true, // Allow cookies to be sent with requests
+  })
+);
 
 // Load environment variables from .env file
 dotenv.config();
@@ -39,7 +42,10 @@ app.use("/auth", authRoutes);
 app.use("/excel", excelRoutes);
 
 // Routes for chart-related operations
-app.use("/charts", chartRoutes); 
+app.use("/charts", chartRoutes);
+
+// Routes for admin-related operations
+app.use("/admin", adminRoutes);
 
 // Global error handling middleware
 app.use(errorHandler);
