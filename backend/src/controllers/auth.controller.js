@@ -8,7 +8,7 @@ const COOKIE_MAX_AGE = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
 const setAuthCookie = (res, token) => {
   res.cookie("token", token, {
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === "production" ? "node" : "lax", // Prevent CSRF attacks
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Prevent CSRF attacks
     secure: process.env.NODE_ENV === "production", // Use secure cookies in production
     maxAge: COOKIE_MAX_AGE,
   });
