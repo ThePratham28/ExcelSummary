@@ -10,9 +10,9 @@ import {
 
 const router = Router();
 
-router.post("/upload", authMiddleware, multer.single("file"), uploadFile);
+router.post("/upload", authMiddleware, multer.single("file"), uploadFile); 
 router.get("/:id", authMiddleware, getFileData);
-router.get("/", authMiddleware, getUserFiles);
+router.get("/", authMiddleware, getUserFiles); 
 router.delete("/:id", authMiddleware, deleteFile);
 
 export default router;

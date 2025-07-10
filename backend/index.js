@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { connectDB } from "./src/config/db.config.js";
 import authRoutes from "./src/routes/auth.routes.js";
 import excelRoutes from "./src/routes/excel.routes.js"; 
+import chartRoutes from "./src/routes/chart.routes.js";
 import { errorHandler } from "./src/middleware/errorHandler.middleware.js";
 
 // Initialize Express application
@@ -36,6 +37,9 @@ app.use("/auth", authRoutes);
 
 // Routes for Excel file handling operations
 app.use("/excel", excelRoutes);
+
+// Routes for chart-related operations
+app.use("/charts", chartRoutes); 
 
 // Global error handling middleware
 app.use(errorHandler);
