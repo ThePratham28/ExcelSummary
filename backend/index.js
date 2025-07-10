@@ -3,6 +3,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import swaggerUi from "swagger-ui-express";
 import { connectDB } from "./src/config/db.config.js";
 import authRoutes from "./src/routes/auth.routes.js";
 import excelRoutes from "./src/routes/excel.routes.js";
@@ -13,6 +14,7 @@ import logger, {
   requestContext,
   requestLogger,
 } from "./src/utils/winstonLogger.js";
+import swaggerSpec from "./src/config/swagger.config.js";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -37,6 +39,18 @@ app.use(
     credentials: true, // Allow cookies to be sent with requests
   })
 );
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+app.get("/api-docs.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerSpec);
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+  res.locals.logger.info("Health check endpoint accessed");
+});
 
 // Default route for the application
 app.get("/", (req, res) => {
