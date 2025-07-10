@@ -15,9 +15,11 @@ const setAuthCookie = (res, token) => {
 };
 
 export const registerUser = async (req, res) => {
-  const { username, email, password, role = "user" } = req.body; // {username: sanket, emai: ddd, password: ddd, role: user}
+  const { username, email, password, role = "user" } = req.body;
+  const logger = res.locals.logger;
 
   if (!username || !email || !password) {
+    logger.warn("Registration failed: missing required fields", { email });
     return res.status(400).json({ message: "All fields are required" });
   }
 
@@ -25,19 +27,22 @@ export const registerUser = async (req, res) => {
     const userExists = await UserModel.findOne({ email });
 
     if (userExists) {
+      logger.warn("Registration failed: user already exists", { email });
       return res.status(400).json({ message: "User already exists" });
     }
 
-    const hashedPassword = await hash(password); // Hash the password before saving
+    const hashedPassword = await hash(password);
+    logger.debug("Password hashed successfully");
 
     const newUser = new UserModel({
       username,
       email,
-      password: hashedPassword, // Store the hashed password
+      password: hashedPassword,
       role,
     });
 
     await newUser.save();
+    logger.info("User registered successfully", { userId: newUser._id, email });
 
     const token = jwt.sign(
       { id: newUser._id, role: newUser.role },
@@ -47,18 +52,24 @@ export const registerUser = async (req, res) => {
       }
     );
 
-    setAuthCookie(res, token); // Set the authentication cookie
+    setAuthCookie(res, token);
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
-    console.error("Error during registration:", error.message);
+    logger.error("Error during registration", {
+      error: error.message,
+      stack: error.stack,
+      email,
+    });
     res.status(500).json({ message: "Server Error" });
   }
 };
 
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
+  const logger = res.locals.logger;
 
   if (!email || !password) {
+    logger.warn("Login failed: missing required fields", { email });
     return res.status(400).json({ message: "Email and password are required" });
   }
 
@@ -66,14 +77,21 @@ export const loginUser = async (req, res) => {
     const user = await UserModel.findOne({ email });
 
     if (!user) {
+      logger.warn("Login failed: user not found", { email });
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    const validPassword = await verify(user.password, password); // Verify the password
+    const validPassword = await verify(user.password, password);
 
     if (!validPassword) {
+      logger.warn("Login failed: invalid password", {
+        userId: user._id,
+        email,
+      });
       return res.status(400).json({ message: "Invalid email or password" });
     }
+
+    logger.info("User logged in successfully", { userId: user._id, email });
 
     const token = jwt.sign(
       { id: user._id, role: user.role },
@@ -83,18 +101,24 @@ export const loginUser = async (req, res) => {
       }
     );
 
-    setAuthCookie(res, token); // Set the authentication cookie
+    setAuthCookie(res, token);
     res.status(200).json({ message: "Login successful" });
   } catch (error) {
-    console.error("Error during login:", error.message);
+    logger.error("Error during login", {
+      error: error.message,
+      stack: error.stack,
+      email,
+    });
     res.status(500).json({ message: "Server Error" });
   }
 };
 
 export const userProfile = async (req, res) => {
   const token = req.cookies.token;
+  const logger = res.locals.logger;
 
   if (!token) {
+    logger.warn("Profile access failed: no token provided");
     return res.status(401).json({ message: "Unauthorized" });
   }
 
@@ -102,18 +126,26 @@ export const userProfile = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     if (!decoded || !decoded.id) {
+      logger.warn("Profile access failed: invalid token");
       return res.status(401).json({ message: "Invalid token" });
     }
 
     const user = await UserModel.findById(decoded.id).select("-password");
 
     if (!user) {
+      logger.warn("Profile access failed: user not found", {
+        userId: decoded.id,
+      });
       return res.status(404).json({ message: "User not found" });
     }
 
+    logger.info("User profile accessed", { userId: user._id });
     res.status(200).json(user);
   } catch (error) {
-    console.error("Error fetching profile:", error.message);
+    logger.error("Error fetching profile", {
+      error: error.message,
+      stack: error.stack,
+    });
     res.status(500).json({ message: "Server Error" });
   }
 };

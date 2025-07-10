@@ -9,6 +9,13 @@ import excelRoutes from "./src/routes/excel.routes.js";
 import chartRoutes from "./src/routes/chart.routes.js";
 import adminRoutes from "./src/routes/admin.routes.js";
 import { errorHandler } from "./src/middleware/errorHandler.middleware.js";
+import logger, {
+  requestContext,
+  requestLogger,
+} from "./src/utils/winstonLogger.js";
+
+// Load environment variables from .env file
+dotenv.config();
 
 // Initialize Express application
 const app = express();
@@ -19,6 +26,10 @@ app.use(express.json());
 // Middleware to parse cookies
 app.use(cookieParser());
 
+// Add request context and logging middleware
+app.use(requestContext);
+app.use(requestLogger);
+
 // Middleware to handle Cross-Origin Resource Sharing (CORS)
 app.use(
   cors({
@@ -27,11 +38,9 @@ app.use(
   })
 );
 
-// Load environment variables from .env file
-dotenv.config();
-
 // Default route for the application
 app.get("/", (req, res) => {
+  res.locals.logger.info("Home route accessed");
   res.send("Welcome to the Excel Analytics Platform!");
 });
 
@@ -51,8 +60,25 @@ app.use("/admin", adminRoutes);
 app.use(errorHandler);
 
 // Start the server and connect to the database
-const port = process.env.PORT || 8080;
+const port = process.env.PORT;
 app.listen(port, () => {
-  connectDB(); // Establish connection to the database
-  console.log("Server is running on http://localhost:8080");
+  logger.info(`Server is running on http://localhost:${port}`);
+  connectDB();
+});
+
+// Handle uncaught exceptions
+process.on("uncaughtException", (error) => {
+  logger.error("Uncaught Exception", {
+    error: error.message,
+    stack: error.stack,
+  });
+  process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (reason, promise) => {
+  logger.error("Unhandled Rejection", {
+    reason: reason instanceof Error ? reason.message : reason,
+    stack: reason instanceof Error ? reason.stack : "No stack trace",
+  });
 });
