@@ -1,9 +1,14 @@
 export const errorHandler = (err, req, res, next) => {
-  const statusCode = res.status === 200 ? 500 : res.status;
+  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
 
-  console.error(
-    process.env.NODE_ENV === "production" ? err.message : err.stack
-  );
+  // Use the request-scoped logger if available, otherwise use console
+  const logger = res.locals.logger || console;
+
+  logger.error(`Error: ${err.message}`, {
+    stack: err.stack,
+    url: req.originalUrl,
+    method: req.method,
+  });
 
   res.status(statusCode).json({
     message: err.message,
