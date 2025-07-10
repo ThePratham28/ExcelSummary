@@ -11,12 +11,12 @@ const router = Router();
 /**
  * @swagger
  * /charts/data/{fileId}:
- *   get:
+ *   post:
  *     summary: Get chart details for a specific Excel file
  *     tags: [Charts]
  *     security:
  *       - cookieAuth: []
- *     description: Retrieves all chart data for a specific Excel file. Requires user authentication.
+ *     description: Retrieves chart data for a specific Excel file. Requires user authentication.
  *     parameters:
  *       - in: path
  *         name: fileId
@@ -24,6 +24,25 @@ const router = Router();
  *         schema:
  *           type: string
  *         description: ID of the Excel file to get chart data for
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - xAxis
+ *               - yAxis
+ *               - chartType
+ *             properties:
+ *               title:
+ *                 type: string
+ *               xAxis:
+ *                 type: string
+ *               yAxis:
+ *                 type: string
+ *               chartType:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Chart data retrieved successfully
@@ -57,7 +76,7 @@ const router = Router();
  *       500:
  *         description: Server error
  */
-router.get("/data/:fileId", authMiddleware("user"), getChartDetails);
+router.post("/data/:fileId", authMiddleware("user"), getChartDetails);
 
 /**
  * @swagger

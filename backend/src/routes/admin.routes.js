@@ -117,7 +117,7 @@ router.delete("/delete-user/:id", authMiddleware("admin"), deleteUser);
  *                   type: number
  *                   example: 120
  *       401:
- *         description: Unauthorized - Not logged in or not an admin
+ *         description: User not found
  *       500:
  *         description: Server error
  */
