@@ -113,28 +113,25 @@ export const loginUser = async (req, res) => {
   }
 };
 
-export const userProfile = async (req, res) => {
-  const token = req.cookies.token;
-  const logger = res.locals.logger;
+export const logoutUser = (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+  });
+  res.status(200).json({ message: "Logout successful" });
+};
 
-  if (!token) {
-    logger.warn("Profile access failed: no token provided");
-    return res.status(401).json({ message: "Unauthorized" });
-  }
+export const userProfile = async (req, res) => {
+  const logger = res.locals.logger;
+  const userId = req.userId; // Get userId from authMiddleware
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    if (!decoded || !decoded.id) {
-      logger.warn("Profile access failed: invalid token");
-      return res.status(401).json({ message: "Invalid token" });
-    }
-
-    const user = await UserModel.findById(decoded.id).select("-password");
+    const user = await UserModel.findById(userId).select("-password");
 
     if (!user) {
       logger.warn("Profile access failed: user not found", {
-        userId: decoded.id,
+        userId,
       });
       return res.status(404).json({ message: "User not found" });
     }
@@ -143,6 +140,7 @@ export const userProfile = async (req, res) => {
     res.status(200).json(user);
   } catch (error) {
     logger.error("Error fetching profile", {
+      userId,
       error: error.message,
       stack: error.stack,
     });

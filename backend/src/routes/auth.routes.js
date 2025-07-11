@@ -1,9 +1,11 @@
 import { Router } from "express";
 import {
   loginUser,
+  logoutUser,
   registerUser,
   userProfile,
 } from "../controllers/auth.controller.js";
+import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
@@ -86,6 +88,20 @@ router.post("/login", loginUser);
 
 /**
  * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: Logout user and clear authentication cookie
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: Logout successful, cookie cleared
+ *       500:
+ *         description: Server error
+ */
+router.post("/logout", logoutUser);
+
+/**
+ * @swagger
  * /auth/profile:
  *   get:
  *     summary: Get user profile
@@ -118,6 +134,6 @@ router.post("/login", loginUser);
  *       500:
  *         description: Server error
  */
-router.get("/profile", userProfile);
+router.get("/profile", authMiddleware(), userProfile);
 
 export default router;
