@@ -113,6 +113,15 @@ export const loginUser = async (req, res) => {
   }
 };
 
+export const logoutUser = (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+  });
+  res.status(200).json({ message: "Logout successful" });
+};
+
 export const userProfile = async (req, res) => {
   const logger = res.locals.logger;
   const userId = req.userId; // Get userId from authMiddleware
