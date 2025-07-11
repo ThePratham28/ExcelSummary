@@ -2,8 +2,10 @@ import { Router } from "express";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 import {
   exportChartData,
+  getAIInsights,
   getChartDetails,
   getChartSuggestions,
+  summarizeData,
 } from "../controllers/chart.controller.js";
 
 const router = Router();
@@ -178,5 +180,78 @@ router.get("/suggestions/:fileId", authMiddleware("user"), getChartSuggestions);
  *         description: Server error
  */
 router.get("/data-export/:fileId", authMiddleware("user"), exportChartData);
+
+
+/**
+ * @swagger
+ * /charts/insights/{fileId}:
+ *   get:
+ *     summary: Get AI-generated insights for a specific Excel file
+ *     tags: [Charts]
+ *     security:
+ *       - cookieAuth: []
+ *     description: Analyzes the Excel file data and provides AI-generated insights. Requires user authentication.
+ *     parameters:
+ *       - in: path
+ *         name: fileId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the Excel file to analyze
+ *     responses:
+ *       200:
+ *         description: AI insights retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 insights:
+ *                   type: object
+ *                   description: AI-generated insights about the data
+ *       401:
+ *         description: Unauthorized - Not logged in
+ *       404:
+ *         description: File not found
+ *       500:
+ *         description: Server error
+ */
+router.get("/insights/:fileId", authMiddleware("user"), getAIInsights);
+
+/**
+ * @swagger
+ * /charts/summarize/{fileId}:
+ *   post:
+ *     summary: Summarize data from a specific Excel file using AI
+ *     tags: [Charts]
+ *     security:
+ *       - cookieAuth: []
+ *     description: Uses AI to summarize the data in the specified Excel file. Requires user authentication.
+ *     parameters:
+ *       - in: path
+ *         name: fileId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the Excel file to summarize
+ *     responses:
+ *       200:
+ *         description: Data summarized successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 summary:
+ *                   type: string
+ *                   description: AI-generated summary of the data
+ *       401:
+ *         description: Unauthorized - Not logged in
+ *       404:
+ *         description: File not found
+ *       500:
+ *         description: Server error
+ */
+router.post("/summarize/:fileId", authMiddleware("user"), summarizeData);
 
 export default router;

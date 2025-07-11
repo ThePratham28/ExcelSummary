@@ -1,4 +1,5 @@
 import { ExcelData } from "../models/excelData.model.js";
+import { generateDataInsights } from "../utils/aiService.js";
 
 export const getChartDetails = async (req, res) => {
   const logger = res.locals.logger;
@@ -222,6 +223,140 @@ export const getChartSuggestions = async (req, res) => {
       stack: error.stack,
     });
     res.status(500).json({ error: error.message });
+  }
+};
+
+export const getAIInsights = async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    const userId = req.userId;
+
+    const logger = res.locals.logger;
+    logger.info("Generating AI insights", { userId, fileId });
+
+    const file = await ExcelData.findOne({ _id: fileId, user: userId });
+    if (!file) {
+      logger.warn("AI insights generation failed: file not found", {
+        userId,
+        fileId,
+      });
+      return res.status(404).json({ error: "File not found." });
+    }
+
+    if (!file.data || file.data.length === 0) {
+      logger.warn("AI insights generation failed: no data available", {
+        userId,
+        fileId,
+        filename: file.filename,
+      });
+      return res
+        .status(400)
+        .json({ error: "No data available to generate insights." });
+    }
+
+    // Generate insights using AI service
+    const insights = await generateDataInsights(file.data, file.columns);
+
+    logger.info("AI insights generated successfully", {
+      userId,
+      fileId,
+      filename: file.filename,
+      insightsCount: Object.keys(insights).length,
+    });
+
+    res.status(200).json({
+      fileId,
+      filename: file.filename,
+      insights,
+      generatedAt: new Date(),
+    });
+  } catch (error) {
+    const logger = res.locals.logger;
+    logger.error("Error generating AI insights", {
+      userId: req.userId,
+      fileId: req.params.fileId,
+      error: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({ error: "Failed to generate AI insights." });
+  }
+};
+
+export const summarizeData = async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    const userId = req.userId;
+    const { columns = [] } = req.body;
+
+    const logger = res.locals.logger;
+    logger.info("Summarizing data", { userId, fileId, columns });
+
+    const file = await ExcelData.findOne({ _id: fileId, user: userId });
+    if (!file) {
+      logger.warn("Data summarization failed: file not found", {
+        userId,
+        fileId,
+      });
+      return res.status(404).json({ error: "File not found." });
+    }
+
+    let dataToAnalyze = file.data;
+    let columnsToAnalyze = file.columns;
+
+    if (columns.length > 0) {
+      const invalidColumns = columns.filter(
+        (col) => !file.columns.includes(col)
+      );
+      if (invalidColumns.length > 0) {
+        logger.warn("Data summarization failed: invalid columns", {
+          userId,
+          fileId,
+          invalidColumns,
+        });
+        return res
+          .status(400)
+          .json({ error: "Invalid columns specified.", invalidColumns });
+      }
+
+      dataToAnalyze = file.data.map((row) => {
+        const filteredRow = {};
+        columns.forEach((col) => {
+          filteredRow[col] = row[col];
+        });
+        return filteredRow;
+      });
+      columnsToAnalyze = columns;
+    }
+
+    const summary = await generateDataInsights(
+      dataToAnalyze,
+      columnsToAnalyze,
+      "focused excel"
+    );
+
+    logger.info("Data summarized successfully", {
+      userId,
+      fileId,
+      filename: file.filename,
+      columnsAnalyzed: columnsToAnalyze.length,
+      summaryKeys: Object.keys(summary).length,
+    });
+    res.status(200).json({
+      fileId,
+      filename: file.filename,
+      summary,
+      analyzedColumns: columnsToAnalyze,
+      generatedAt: new Date(),
+    });
+  } catch (error) {
+    const logger = res.locals.logger;
+    logger.error("Error summarizing data", {
+      userId: req.userId,
+      fileId: req.params.fileId,
+      error: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({ error: "Failed to summarize data." });
   }
 };
 
