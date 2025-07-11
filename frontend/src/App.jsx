@@ -8,6 +8,7 @@ import ExcelLandingPage from './components/landing_page';
 import ProtectedRoute from './components/ProtectedRoute';
 import ExcelUploadComponent from './components/upload';
 import { AuthProvider } from './components/context/AuthContext';
+import AnalyticsPage from './components/analytics';
 function App() {
   return (
     <>
@@ -89,7 +90,9 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
            <Route path="/home_page" element={<ProtectedRoute><Home /></ProtectedRoute>} />
            <Route path="/upload_file" element={<ProtectedRoute><ExcelUploadComponent /></ProtectedRoute>} />
-  
+
+           <Route path="/analytics/:fileId" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+
       </Routes>
             </AuthProvider>
     </>

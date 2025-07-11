@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { FileSpreadsheet, Upload, BarChart3, Download, Settings, User, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+
 const ExcelAnalyzerNavbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -22,12 +23,9 @@ const ExcelAnalyzerNavbar = () => {
 
   const handleLogout = async () => {
     try {
-      await logout();
-      navigate('/login', { replace: true });
+      await logout(navigate); 
     } catch (error) {
       console.error('Logout failed:', error);
-      // Force redirect even if logout request fails
-      navigate('/login', { replace: true });
     }
   };
 
@@ -63,7 +61,10 @@ const ExcelAnalyzerNavbar = () => {
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo and Brand */}
-          <div className="flex items-center space-x-3">
+          <div 
+            className="flex items-center space-x-3 cursor-pointer"
+            onClick={() => navigate('/')}
+          >
             <div className="bg-gradient-to-r from-green-400 to-emerald-500 p-2 rounded-lg shadow-lg">
               <FileSpreadsheet className="h-8 w-8 text-gray-900" />
             </div>
@@ -78,7 +79,9 @@ const ExcelAnalyzerNavbar = () => {
             <div onClick={() => navigate('/upload_file')} className="cursor-pointer">
               <NavItem icon={<Upload className="h-4 w-4" />} text="Upload" />
             </div>
-            <NavItem icon={<BarChart3 className="h-4 w-4" />} text="Analytics" />
+            <div onClick={() => navigate('/analytics')} className="cursor-pointer">
+              <NavItem icon={<BarChart3 className="h-4 w-4" />} text="Analytics" />
+            </div>
             <NavItem icon={<Download className="h-4 w-4" />} text="Export" />
             <NavItem icon={<Settings className="h-4 w-4" />} text="Settings" />
             <div className="h-6 w-px bg-gray-600"></div>

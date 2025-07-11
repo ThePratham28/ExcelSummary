@@ -7,12 +7,14 @@ import {
   CheckCircle, 
   AlertCircle,
   X,
-  Download,
   Trash2
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import ExcelAnalyzerNavbar from './navbar';
+import axios from 'axios';
 
 const ExcelUploadComponent = () => {
+  const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [previewData, setPreviewData] = useState(null);
@@ -20,6 +22,7 @@ const ExcelUploadComponent = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [error, setError] = useState(null);
   const [apiResponse, setApiResponse] = useState(null);
   const fileInputRef = useRef(null);
@@ -65,7 +68,7 @@ const ExcelUploadComponent = () => {
     }
   };
 
-  const API_URL=import.meta.env.VITE_BASE_URL
+  const API_URL = import.meta.env.VITE_BASE_URL;
 
   const uploadFileToAPI = async () => {
     if (!selectedFile) return;
@@ -85,24 +88,6 @@ const ExcelUploadComponent = () => {
       
       setApiResponse(response.data);
       setUploadedFile(selectedFile);
-      
-      // Create preview data from API response
-      const mockData = {
-        sheets: ['Sheet1'],
-        rows: 150, // You can adjust this based on actual data
-        columns: response.data.columns.length,
-        preview: [
-          response.data.columns,
-          // Add some mock rows for preview
-          ['1', 'Sample Item 1', 'Sample ingredients 1'],
-          ['2', 'Sample Item 2', 'Sample ingredients 2'],
-          ['3', 'Sample Item 3', 'Sample ingredients 3'],
-          ['4', 'Sample Item 4', 'Sample ingredients 4'],
-          ['5', 'Sample Item 5', 'Sample ingredients 5']
-        ]
-      };
-      
-      setPreviewData(mockData);
       setIsUploading(false);
       
     } catch (err) {
@@ -110,6 +95,55 @@ const ExcelUploadComponent = () => {
       setError(err.response?.data?.message || 'Failed to upload file. Please try again.');
       setIsUploading(false);
     }
+  };
+
+  const fetchPreviewData = async () => {
+    if (!apiResponse?.fileId) return;
+    
+    setIsLoadingPreview(true);
+    setError(null);
+    
+    try {
+      const response = await axios.get(`${API_URL}/excel/${apiResponse.fileId}`);
+      
+      // Transform the API response to match our preview format
+      const transformedData = {
+        sheets: response.data.sheets || ['Sheet1'],
+        rows: response.data.totalRows || response.data.data?.length || 0,
+        columns: response.data.columns?.length || Object.keys(response.data.data?.[0] || {}).length || 0,
+        preview: []
+      };
+
+      // Create preview array with headers and data
+      if (response.data.columns && response.data.data) {
+        // Add headers as first row
+        transformedData.preview.push(response.data.columns);
+        
+        // Add data rows (limit to first 10 rows for preview)
+        const previewRows = response.data.data.slice(0, 10);
+        previewRows.forEach(row => {
+          const rowData = response.data.columns.map(column => row[column] || '');
+          transformedData.preview.push(rowData);
+        });
+      } else if (response.data.data && Array.isArray(response.data.data)) {
+        // Handle case where data is array of arrays
+        transformedData.preview = response.data.data.slice(0, 11); // Headers + 10 rows
+      }
+      
+      setPreviewData(transformedData);
+      setIsPreviewOpen(true);
+      setIsLoadingPreview(false);
+      
+    } catch (err) {
+      console.error('Failed to fetch preview data:', err);
+      setError(err.response?.data?.message || 'Failed to fetch preview data. Please try again.');
+      setIsLoadingPreview(false);
+    }
+  };
+
+  const handlePreview = () => {
+    if (!uploadedFile || !apiResponse) return;
+    fetchPreviewData();
   };
 
   const handleDragOver = useCallback((e) => {
@@ -142,8 +176,8 @@ const ExcelUploadComponent = () => {
   const handleAnalyze = () => {
     if (!uploadedFile || !apiResponse) return;
     
-    // Use the fileId from API response for analysis
-    alert(`Analyzing file with ID: ${apiResponse.fileId}\n\nColumns found: ${apiResponse.columns.join(', ')}`);
+    // Navigate to analytics page with fileId
+    navigate(`/analytics/${apiResponse.fileId}`);
   };
 
   const resetUpload = () => {
@@ -233,11 +267,21 @@ const ExcelUploadComponent = () => {
                   )}
                   <div className="flex space-x-4">
                     <button
-                      onClick={() => setIsPreviewOpen(true)}
-                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      onClick={handlePreview}
+                      disabled={isLoadingPreview}
+                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
                     >
-                      <Eye className="w-4 h-4" />
-                      <span>Preview</span>
+                      {isLoadingPreview ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Loading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-4 h-4" />
+                          <span>Preview</span>
+                        </>
+                      )}
                     </button>
                     <button
                       onClick={handleAnalyze}
@@ -345,39 +389,47 @@ const ExcelUploadComponent = () => {
             <div className="p-6 overflow-auto max-h-[60vh]">
               <div className="mb-4">
                 <h4 className="text-lg font-semibold text-white mb-2">Data Preview</h4>
-                <p className="text-gray-400 text-sm">Showing first 5 rows</p>
+                <p className="text-gray-400 text-sm">
+                  Showing first {Math.min(previewData.preview.length - 1, 10)} rows of data
+                </p>
               </div>
               
-              <div className="overflow-x-auto">
-                <table className="w-full border border-gray-600 rounded-lg overflow-hidden">
-                  <thead>
-                    <tr className="bg-gray-700">
-                      {previewData.preview[0]?.map((header, index) => (
-                        <th
-                          key={index}
-                          className="px-4 py-3 text-left text-sm font-medium text-gray-200 border-r border-gray-600 last:border-r-0"
-                        >
-                          {header}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {previewData.preview.slice(1).map((row, rowIndex) => (
-                      <tr key={rowIndex} className="border-t border-gray-600">
-                        {row.map((cell, cellIndex) => (
-                          <td
-                            key={cellIndex}
-                            className="px-4 py-3 text-sm text-gray-300 border-r border-gray-600 last:border-r-0"
+              {previewData.preview.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full border border-gray-600 rounded-lg overflow-hidden">
+                    <thead>
+                      <tr className="bg-gray-700">
+                        {previewData.preview[0]?.map((header, index) => (
+                          <th
+                            key={index}
+                            className="px-4 py-3 text-left text-sm font-medium text-gray-200 border-r border-gray-600 last:border-r-0"
                           >
-                            {cell}
-                          </td>
+                            {header}
+                          </th>
                         ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {previewData.preview.slice(1).map((row, rowIndex) => (
+                        <tr key={rowIndex} className="border-t border-gray-600">
+                          {row.map((cell, cellIndex) => (
+                            <td
+                              key={cellIndex}
+                              className="px-4 py-3 text-sm text-gray-300 border-r border-gray-600 last:border-r-0"
+                            >
+                              {cell || ''}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center text-gray-400 py-8">
+                  No data available to preview
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}

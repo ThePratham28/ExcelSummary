@@ -21,7 +21,6 @@ export function AuthProvider({ children }) {
       
       const response = await axios.get(`${API_URL}/auth/profile`, {
         withCredentials: true,
-        timeout: 10000 // 10 second timeout
       });
       
       setUser(response.data);
@@ -47,11 +46,11 @@ export function AuthProvider({ children }) {
       const response = await axios.post(`${API_URL}/auth/login`, credentials, {
         withCredentials: true
       });
-      
-      if (response.data) {
-        setUser(response.data.user || response.data);
-        return { success: true, data: response.data };
-      }
+      await checkAuth();
+      return { 
+        success: true, 
+        user: response.data 
+      };
     } catch (err) {
       console.error('Login failed:', err);
       return { 
@@ -61,20 +60,23 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = async () => {
-    try {
-      await axios.post(`${API_URL}/auth/logout`, {}, {
-        withCredentials: true
-      });
-    } catch (err) {
-      console.error('Logout request failed:', err);
-    } finally {
-      setUser(null);
-      // Clear any local storage tokens as fallback
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
+const logout = async (navigate) => {
+  try {
+    await axios.post(`${API_URL}/auth/logout`, {}, {
+      withCredentials: true
+    });
+  } catch (err) {
+    console.error('Logout request failed:', err);
+  } finally {
+    setUser(null);
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    if (navigate) {
+      navigate('/login'); // ✅ Proper React redirect
     }
-  };
+  }
+};
+
 
   const value = {
     user,
